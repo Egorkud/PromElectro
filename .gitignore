@@ -1,5 +1,10 @@
 ### Python + .idea ignore template
 ### Python template
+/data
+*.xlsx
+*.rar
+*.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
