@@ -6,6 +6,7 @@ from instruments.DataInstruments import DataInstruments
 
 def main():
     DI.groups_filler()          # Autofill groups from groups_sheet (default "new_groups.xlsx")
+    # DI.data_scrapper()          # Need to make individual conditions
 
 
 if __name__ == '__main__':
