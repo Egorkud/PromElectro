@@ -2,8 +2,12 @@
 ### Python template
 /data
 *.xlsx
+*.xls
+*.xlsm
 *.rar
 *.zip
+*.pdf
+*.jpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
