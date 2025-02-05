@@ -7,6 +7,7 @@ from instruments.DataScrappers import DataScrappers
 
 def main():
     DI.init_project()
+    # DI.get_coloured_cells()
 
     # DI.groups_filler()                      # Autofill groups from groups_sheet (default "new_groups.xlsx")
 

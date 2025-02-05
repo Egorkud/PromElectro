@@ -92,6 +92,24 @@ class DataInstruments(Resources):
             excel.Quit()
 
 
+    # Simply gets data from one file and write to empty sheet excel
+    def get_coloured_cells(self):
+        counter = 1
+        for row in range(1, self.work_sheet.max_row + 1):
+
+            name = self.work_sheet.cell(row, 1).value
+            articule = self.work_sheet.cell(row, 3).value
+            cell_fill = self.work_sheet.cell(row, 11).fill
+
+            if cell_fill.bgColor.rgb != "00000000":
+                print(row)
+                self.empty_sheet.cell(counter, 1).value = name
+                self.empty_sheet.cell(counter, 2).value = articule
+
+                counter += 1
+
+        self.book_empty.save("new_filtered_data.xlsx")
+
     # Fill descriptions from descriptions sheet.
     # Column 1. Name or id as convenient
     # Column 2. Group name (full path to group).
