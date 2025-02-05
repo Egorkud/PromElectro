@@ -10,15 +10,13 @@ class Resources:
             self.groups_sheet = self.export_file["groups_sheet"]
         except Exception as ex:
             print(ex)
-            raise SystemExit
 
 
         # Common data (usually does not need changes)
         try:
             self.blank_file = openpyxl.open("data/sample.xlsx")
-        except FileNotFoundError as ex:
+        except Exception as ex:
             print(ex)
-            raise SystemExit
 
         # Adding colours for cosy prints
         init(autoreset=True)
@@ -28,6 +26,9 @@ class Resources:
         self.BLUE = lambda text: f"{Fore.BLUE}{text}{Style.RESET_ALL}"
 
     def close(self):
-        self.export_file.close()
-        self.blank_file.close()
-
+        try:
+            self.export_file.close()
+            self.blank_file.close()
+        except Exception as ex:
+            print(ex)
+            print(self.RED("\nCannot close, check the files\n"))
