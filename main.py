@@ -20,6 +20,7 @@ if __name__ == '__main__':
     start = time.time()
 
     res, DI, DS = Resources(), DataInstruments(), DataScrappers()
+    print(res.BLUE(f"\nResources loaded\n"))
     main()
     res.close()
 

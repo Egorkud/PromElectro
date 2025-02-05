@@ -4,21 +4,20 @@ from colorama import Fore, Back, Style, init
 
 class Resources:
     def __init__(self):
+
+        # work file load
         try:
-            self.export_file = openpyxl.load_workbook("add_categories.xlsx")
-            self.export_sheet = self.export_file["export_sheet"]
-            self.groups_sheet = self.export_file["groups_sheet"]
+            self.work_file = openpyxl.load_workbook("прайс_ферон.xlsx")
+            self.work_sheet = self.work_file.active
         except Exception as ex:
             print(ex)
-            raise SystemExit
-
+            print("Problems with work_file load\n")
 
         # Common data (usually does not need changes)
         try:
             self.blank_file = openpyxl.open("data/sample.xlsx")
-        except FileNotFoundError as ex:
+        except Exception as ex:
             print(ex)
-            raise SystemExit
 
         # Adding colours for cosy prints
         init(autoreset=True)
@@ -28,6 +27,9 @@ class Resources:
         self.BLUE = lambda text: f"{Fore.BLUE}{text}{Style.RESET_ALL}"
 
     def close(self):
-        self.export_file.close()
-        self.blank_file.close()
-
+        try:
+            self.work_file.close()
+            self.blank_file.close()
+        except Exception as ex:
+            print(ex)
+            print(self.RED("\nCannot close, check the files\n"))
