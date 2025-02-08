@@ -1,3 +1,5 @@
+clean_extentions = ("cdr",)
+
 PRODUCT_COLUMNS = {
     1: "Код товара",
     2: "Артикул",

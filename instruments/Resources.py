@@ -1,5 +1,9 @@
+from io import BytesIO
+
 import openpyxl
+from PyPDF2 import PdfReader
 from colorama import Fore, Back, Style, init
+from instruments import config
 
 
 class Resources:
@@ -7,7 +11,7 @@ class Resources:
 
         # work file load
         try:
-            self.work_file = openpyxl.load_workbook("прайс_ферон.xlsx")
+            self.work_file = openpyxl.load_workbook("new_filtered_data.xlsx")
             self.work_sheet = self.work_file.active
         except Exception as ex:
             print(ex)
@@ -15,17 +19,18 @@ class Resources:
 
         # export file load
         try:
-            self.export_file = openpyxl.load_workbook("add_categories.xlsx")
-            self.export_sheet = self.export_file["export_sheet"]
-            self.groups_sheet = self.export_file["groups_sheet"]
+            self.groups_file = openpyxl.load_workbook("add_groups.xlsx")
+            self.data_sheet = self.groups_file["Data"]
+            self.groups_sheet = self.groups_file["Groups"]
         except Exception as ex:
             print(ex)
-            print("Problems with add_categories.xlsx load\n")
+            print("Problems with add_groups.xlsx load\n")
 
 
         # Common data (usually does not need changes)
         try:
             self.blank_file = openpyxl.open("data/sample.xlsx")
+            self.blank_sheet = self.blank_file.active
             self.book_empty = openpyxl.Workbook()  # Empty table
             self.empty_sheet = self.book_empty.active
         except Exception as ex:
@@ -41,9 +46,37 @@ class Resources:
 
     def close(self):
         try:
-            self.export_file.close()
+            self.groups_file.close()
             self.blank_file.close()
             self.work_file.close()
         except Exception as ex:
             print(ex)
             print("Cannot close files, chech all the excel files or Resources.py\n")
+
+    # Returns title of the pdf file
+    @staticmethod
+    def read_pdf(request):
+        pdf_data = BytesIO(request.content)
+        pdf_reader = PdfReader(pdf_data)
+        metadata = pdf_reader.metadata
+        title = metadata.get("/Title", "Назва не знайдена")
+
+        return title
+
+    @staticmethod
+    def save_pdf(file_path: str, request):
+        with open(file_path, "wb") as file:
+            for chunk in request.iter_content(chunk_size=1024):  # Кожен чанк - 1024 байти
+                if chunk:  # Перевіряємо, що чанк не порожній
+                    file.write(chunk)
+
+    @staticmethod
+    def clean_pdf_name(title : str):
+        clean_extentions = config.clean_extentions
+
+        try:
+            if title.split(".")[1] in clean_extentions:
+                title = title.split(".")[0]
+                return f"{title}.pdf"
+        except:
+            return f"{title}.pdf"
