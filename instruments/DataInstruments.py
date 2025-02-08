@@ -1,3 +1,4 @@
+import openpyxl
 from openpyxl.workbook import Workbook
 from pathlib2 import Path
 import win32com.client
@@ -121,14 +122,32 @@ class DataInstruments(Resources):
             group_name = self.groups_sheet.cell(row, 2).value
             groups_dict.update([(id_name, group_name)])
 
-        for row in range(2, self.export_sheet.max_row + 1):
-            id_name = self.export_sheet.cell(row, 3).value
+        for row in range(2, self.data_sheet.max_row + 1):
+            id_name = self.data_sheet.cell(row, 3).value
             if id_name in groups_dict.keys():
                 group_name = groups_dict[id_name]
-                self.export_sheet.cell(row, 3).value = group_name
+                self.data_sheet.cell(row, 3).value = group_name
                 print(self.GREEN(f"{row}. changed"))
             else:
                 print(self.YELLOW(f"{row}. skipped"))
 
-        self.export_file.save(filename)
+        self.groups_file.save(filename)
         print(self.GREEN(f"\nFile {filename} created"))
+
+    @staticmethod
+    def check_duplicates_articule(export_file : str = "name.xlsx", work_file : str = "name.xlsx"):
+        export_file = openpyxl.load_workbook(export_file)
+        export__sheet = export_file["Sheet"]
+
+        work_file = openpyxl.load_workbook(work_file)
+        work_sheet = work_file["Sheet"]
+
+        for row in range(2, work_sheet.max_row + 1):
+            articule_to_check = work_sheet.cell(row, 2).value
+            for i in range(2, export__sheet.max_row + 1):
+                used_articule = export__sheet.cell(i, 2).value
+
+                if used_articule == articule_to_check:
+                    print(f"{articule_to_check}: {row}")
+
+        print("check_duplicates_articule Done!")

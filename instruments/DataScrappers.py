@@ -20,130 +20,205 @@ class DataScrappers(Resources):
             "User-Agent": UserAgent().random,
         }
 
-
-    def instructions_from_links(self, filename : str = "scrapped_data (instructions).xlsx"):
-        for row in range(2, self.export_sheet.max_row + 1):
-            print(row)
-            url = self.export_sheet.cell(row, 1).value
-
-            output_folder = "downloaded_pdfs"
-            os.makedirs(output_folder, exist_ok=True)
-
-            full_url = url.split(".pdf")
-            link_name, page_num = full_url[0], full_url[1]
-
-            clean_pdf_url = f"{link_name}.pdf"
-
-            file_name = os.path.basename(urlparse(clean_pdf_url).path)
-            file_path = Path(output_folder) / file_name
-
-            print(file_name)
-
-            instruction_name = f"/content/instructions/{file_name}{link_name[1]}"
-            self.export_sheet.cell(row, 5).value = instruction_name
-
-            try:
-                req = requests.get(url, headers=self.headers)
-
-                # Implement data scrapping here
-
-
-                # Save data to file
-                with open(file_path, "wb") as pdf_file:
-                    for chunk in req.iter_content(chunk_size=1024):
-                        pdf_file.write(chunk)
-
-            except Exception as ex:
-                print(ex)
-
-            self.export_file.save(filename)
-            time.sleep(3 + random.uniform(1, 3))
-        print(self.GREEN(f"\nFile {filename} created"))
-
-    def photo_from_urls(self, filename : str = "scrapped_data (photos).xlsx"):
-        for row in range(2, self.export_sheet.max_row + 1):
-            print(self.GREEN(f"{row}. Started"))
-            url = self.export_sheet.cell(row, 16).value
-
-            output_folder = "downloaded_photos"
-            os.makedirs(output_folder, exist_ok=True)
-
-            file_path_name = os.path.basename(urlparse(url).path)
-            file_path = os.path.join(output_folder, file_path_name)
-            photo_path_name = f"/content/images/ctproduct_image/INPUT_MANUFACTURER_NAME"    # Needs INTPUT
-
-            try:
-                req = requests.get(url, headers=self.headers)
-                src = req.text
-                soup = BeautifulSoup(src, "lxml")
-
-                # Get all the necessary links from website into list
-                # If there are more than 1 photo, make 1 list with all photos
-                main_photo = [...]
-                all_photos = [...]
-
-
-                # INPUT list of all links or only 1 main image link
-                for id, link in enumerate(...):
-                    req = requests.get(link, headers=self.headers)
-                    file_name = f"{file_path_name}_{id + 1}.jpg"
-
-                    with open(f"{file_path}_{id + 1}.jpg", "wb") as file:
-                        file.write(req.content)
-
-                    print(f"{id + 1}. Downloaded {link}")
-                    time.sleep(3 + random.uniform(1, 3))
-
-                    self.export_sheet.cell(row, 16 + id).value = f"{photo_path_name}/{file_name}"
-
-            except Exception as ex:
-                print(ex)
-
-            self.export_file.save(filename)
-            time.sleep(3 + random.uniform(1, 3))
-        print(self.GREEN(f"\nFile {filename} created"))
-
-    def characteristics_from_articules(self, filename : str = "scrapped_data (characteristics).xlsx"):
+    def big_scrap_from_articules(self, filename : str = "scrapped_data (instructions+photos).xlsx"):
         char_dict = {}
         counter = 43
 
-        for row in range(2, self.export_sheet.max_row + 1):
+        for row in range(2, self.work_sheet.max_row + 1):
             print(self.GREEN(f"{row}. Started"))
 
-            link = ""
-            url_search = ""
+            url_search_ru = "https://feron.ua/search/?search="
 
-            item_articule = self.export_sheet.cell(row, 2).value
-            item_articule.replace(" ", "+")
-            url = f"{url_search}{item_articule}"
+            item_articule = self.work_sheet.cell(row, 2).value
+            self.blank_sheet.cell(row, 2).value = item_articule
 
-            # 1 Layer
+            url = f"{url_search_ru}{item_articule}"
+
+            # 1 Layer - Search
             try:
                 req = requests.get(url, headers=self.headers)
                 src = req.text
                 soup = BeautifulSoup(src, "lxml")
 
                 # Implement soup find searched item
-                searched_item = ...
-
-                link = f"{link}{searched_item}"
-                print(link)
-
+                searched_item = (soup.find("div", class_="image")
+                                 .find("a")
+                                 .get("href"))
+                print(searched_item)
                 time.sleep(2 + random.uniform(1, 3))
-                # 2 Layer
+
+                # 2 Layer - Item
                 try:
-                    req = requests.get(link, headers=self.headers)
+                    # Continue Implementation
+                    req = requests.get(searched_item, headers=self.headers)
                     src = req.text
                     soup = BeautifulSoup(src, "lxml")
 
-                    # Continue Implementation
+                    # # Get description RU
+                    # try:
+                    #     description_lines_ru = (soup.find("div", class_="product_tab_content")
+                    #                    .find("div", id="tab-description").contents)
+                    #     clean_description_ru = [str(i) for i in description_lines_ru if i != "\n"]
+                    #     self.blank_sheet.cell(row, 11).value = "\n".join(clean_description_ru)
+                    #
+                    #     time.sleep(2 + random.uniform(1, 3))
+                    # except Exception as ex:
+                    #     print(ex)
+                    #     print("No description RU")
+                    #
+                    # # Get description UKR
+                    # try:
+                    #     ukr_link = searched_item.replace("feron.ua/", "feron.ua/ua/")
+                    #     req = requests.get(ukr_link, headers=self.headers)
+                    #     src = req.text
+                    #     soup_ukr = BeautifulSoup(src, "lxml")
+                    #
+                    #     description_lines_ukr = (soup_ukr.find("div", class_="product_tab_content")
+                    #                    .find("div", id="tab-description").contents)
+                    #     clean_description_ukr = [str(i) for i in description_lines_ukr if i != "\n"]
+                    #     self.blank_sheet.cell(row, 12).value = "\n".join(clean_description_ukr)
+                    #
+                    #     time.sleep(2 + random.uniform(1, 3))
+                    # except Exception as ex:
+                    #     print(ex)
+                    #     print("No description ukr")
+                    #
+                    #
+                    # # Get characteristics
+                    # try:
+                    #     characteristics = (soup.find("div", class_="product_tab_content")
+                    #                        .find("table", class_="table table-bordered")
+                    #                        .find_all("tbody"))
+                    #
+                    #     for char in characteristics:
+                    #         for tr in char.find_all("tr"):
+                    #             tds = tr.find_all("td")
+                    #             key, value = tds[0].text, tds[1].text
+                    #
+                    #             if key not in char_dict.keys():
+                    #                 char_dict.update([(key, counter)])
+                    #                 self.blank_sheet.cell(1, counter).value = key
+                    #                 counter += 1
+                    #
+                    #             char_col = char_dict[key]
+                    #             self.blank_sheet.cell(row, char_col).value = value
+                    #
+                    # except Exception as ex:
+                    #     print(ex)
+                    #     print("No characteristics")
+                    #
+                    # Get instructions
+                    try:
+                        find_instr = (soup.find("ul", class_="attribute attribute--insert qq3")
+                                       .find_all("li"))
+
+                        for instruction in find_instr:
+                            span = instruction.find("span")
+                            if span and "Инструкция" in span.text:
+                                instructioin_link = instruction.find("a").get("href")
+
+                                output_folder = "downloaded_pdfs"
+                                os.makedirs(output_folder, exist_ok=True)
+
+                                time.sleep(2 + random.uniform(1, 3))
+                                req_pdf = requests.get(instructioin_link, headers=self.headers)
+                                title = self.read_pdf(req_pdf)
+                                file_name = self.clean_pdf_name(title)
+                                file_path = Path(output_folder) / file_name
+
+                                self.save_pdf(file_path, req_pdf)
+
+                                server_file_path = f"/content/instructions/{file_name}"
+                                self.blank_sheet.cell(row, 7).value = server_file_path
 
 
+                    except Exception as ex:
+                        print(ex)
+                        print("No instructions")
+
+                    # Get photos
+                    try:
+                        photo_data = (soup.find("div", class_="column_left-slider sliderss")
+                                      .find("div", class_="slider-nav_prod")
+                                      .find_all("img"))
+
+                        photo_links = [link.get("href") for link in photo_data]
+
+                        for id, link in enumerate(photo_links):
+                            output_folder = "downloaded_photos"
+                            os.makedirs(output_folder, exist_ok=True)
+
+                            file_path_name = os.path.basename(urlparse(link).path)
+                            file_path = os.path.join(output_folder, file_path_name)
+                            photo_path_name = f"/content/images/ctproduct_image/feron"  # Needs INTPUT
+                            file_name = f"{file_path_name}_{id + 1}.jpg"
+
+                            time.sleep(1 + random.uniform(1, 3))
+                            req = requests.get(link, headers=self.headers)
+                            with open(f"{file_path}_{id + 1}.jpg", "wb") as file:
+                                file.write(req.content)
+
+                            self.blank_sheet.cell(row, 16 + id).value = f"{photo_path_name}/{file_name}"
+
+                    except Exception as ex:
+                        print(ex)
+                        print("No photos")
+
+                    # # Get names ru ukr
+                    # try:
+                    #     manufacturers = ("Ardero ", "Feron ", "Ledcoin ")
+                    #     series = self.work_sheet.cell(row, 3).value
+                    #
+                    #     ukr_link = searched_item.replace("feron.ua/", "feron.ua/ua/")
+                    #     req_ukr = requests.get(ukr_link, headers=self.headers)
+                    #     src_ukr = req_ukr.text
+                    #     soup_ukr = BeautifulSoup(src_ukr, "lxml")
+                    #
+                    #     if series is None:
+                    #         series = ""
+                    #     else:
+                    #         series = f"{series} "
+                    #
+                    #     full_name_ru = (soup.find("div", class_="container product_page")
+                    #                  .find("h1", itemprop="name")
+                    #                  .text.strip())
+                    #     full_name_ukr = (soup_ukr.find("div", class_="container product_page")
+                    #                  .find("h1", itemprop="name")
+                    #                  .text.strip())
+                    #
+                    #
+                    #     manufacturer = next((m for m in manufacturers if m in full_name_ru), None)
+                    #     item_type_ru, last_name_ru = full_name_ru.split(manufacturer, 1)
+                    #     item_type_ukr, last_name_ukr = full_name_ukr.split(manufacturer, 1)
+                    #
+                    #
+                    #     try:
+                    #         last_name_ru = last_name_ru.replace(f"{series}", "")
+                    #         last_name_ukr = last_name_ukr.replace(f"{series}", "")
+                    #     except Exception as ex:
+                    #         print(ex)
+                    #
+                    #
+                    #     new_name_ru = f"{item_type_ru.strip()} {last_name_ru.strip()} {item_articule} {series}{manufacturer}"
+                    #     new_name_ukr = f"{item_type_ukr.strip()} {last_name_ukr.strip()} {item_articule} {series}{manufacturer}"
+                    #
+                    #     print(new_name_ru)
+                    #     print(new_name_ukr)
+                    #
+                    #     self.blank_sheet.cell(row, 4).value = new_name_ru
+                    #     self.blank_sheet.cell(row, 5).value = new_name_ukr
+                    #
+                    # except Exception as ex:
+                    #     print(ex)
+                    #     print("No name or manufacturer name")
+
+
+                    time.sleep(2 + random.uniform(1, 3))
                 except Exception as ex:
                     print(self.RED(ex))
             except Exception as ex:
                 print(self.RED(ex))
 
-            self.export_file.save(filename)
+            self.blank_file.save(filename)
             time.sleep(3 + random.uniform(1, 3))
         print(self.GREEN(f"\nFile {filename} created"))
