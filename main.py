@@ -10,11 +10,11 @@ def main():
     # DI.get_coloured_cells()
 
     # DI.groups_filler()                      # Autofill groups from groups_sheet (default "new_groups.xlsx")
-    # DI.check_duplicates_articule("export.xlsx", "new_filtered_data.xlsx")
+    DI.check_duplicates_articule("NasekomymNet_opt.xlsx", "website_positions.xlsx")
 
     # DS.instructions_from_links()            # Get instructions from file with links
     # DS.photo_from_urls()                    # Get all photos from file with links
-    DS.big_scrap_from_articules()     # Get all characteristics from file with articules
+    # DS.big_scrap_from_articules()     # Get all characteristics from file with articules
 
 
 

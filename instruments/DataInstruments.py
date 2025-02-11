@@ -1,7 +1,7 @@
 import openpyxl
 from openpyxl.workbook import Workbook
 from pathlib2 import Path
-import win32com.client
+import pandas as pd
 
 from instruments import config
 from instruments.Resources import Resources
@@ -42,55 +42,6 @@ class DataInstruments(Resources):
 
             wb.save(sample_file)
             print(self.GREEN(f"File {sample_file} was filled"))
-
-        pult_file = data_dir / "Пульт.xlsm"
-
-        if not pult_file.exists() or True:
-            # 1. Create Excel
-            absolut = Path(pult_file).resolve()
-            print(absolut)
-            excel = win32com.client.Dispatch("Excel.Application")
-            excel.Visible = False
-
-            # 2 Create .xlsm file
-            wb = excel.Workbooks.Add()
-            wb.SaveAs(r"D:\Programming\PythonProjects\PromElectro\data\Пульт.xlsm", FileFormat=52)  # 52 = .xlsm
-            wb.Close()
-            excel.Quit()
-
-            # 3. Add VBA macro
-            excel = win32com.client.Dispatch("Excel.Application")
-            excel.Visible = False  # Робимо Excel невидимим
-            wb_macro = excel.Workbooks.Open(absolut)
-
-            # Додаємо модуль VBA
-            vb_component = wb_macro.VBProject.VBComponents.Add(1)  # 1 - стандартний модуль
-            vb_component.Name = "Module1"
-            vb_component.CodeModule.AddFromString('''
-            Sub HelloWorld()
-                MsgBox "Hello from VBA!", vbInformation, "Python VBA Macro"
-            End Sub
-            ''')
-
-            # 5️⃣ ВАЖЛИВО! Спочатку зберігаємо макрос, і лише потім додаємо кнопку
-            wb_macro.Save()
-
-            # 6️⃣ Додаємо кнопку
-            sheet = wb_macro.Sheets("Sheet1")
-
-            excel_button = sheet.OLEObjects().Add(
-                ClassType="Forms.CommandButton.1",
-                Left=100, Top=100, Width=100, Height=30
-            )
-            excel_button.Object.Caption = "Run Macro"
-
-            # 7️⃣ Правильний формат виклику макросу!
-            excel_button.Object.OnAction = "Module1.HelloWorld"
-
-            # 8️⃣ Фінальне збереження
-            wb_macro.Save()
-            wb_macro.Close()
-            excel.Quit()
 
 
     # Simply gets data from one file and write to empty sheet excel
@@ -136,18 +87,19 @@ class DataInstruments(Resources):
 
     @staticmethod
     def check_duplicates_articule(export_file : str = "name.xlsx", work_file : str = "name.xlsx"):
-        export_file = openpyxl.load_workbook(export_file)
-        export__sheet = export_file["Sheet"]
+        # Завантажуємо дані з другого стовпця (артикули)
+        export_df = pd.read_excel(export_file, usecols=[1])  # 0-based index → 2-й стовпець = index 1
+        work_df = pd.read_excel(work_file, usecols=[1])
 
-        work_file = openpyxl.load_workbook(work_file)
-        work_sheet = work_file["Sheet"]
+        # Конвертуємо артикули в множину для швидкого пошуку
+        export_articles = set(export_df.iloc[:, 0].dropna())
 
-        for row in range(2, work_sheet.max_row + 1):
-            articule_to_check = work_sheet.cell(row, 2).value
-            for i in range(2, export__sheet.max_row + 1):
-                used_articule = export__sheet.cell(i, 2).value
+        # Перевіряємо наявність у множині
+        duplicates = work_df.iloc[:, 0].dropna().isin(export_articles)
 
-                if used_articule == articule_to_check:
-                    print(f"{articule_to_check}: {row}")
+        # Виводимо рядки з дублями
+        for idx, is_duplicate in enumerate(duplicates, start=2):
+            if is_duplicate:
+                print(f"{work_df.iloc[idx-2, 0]}: {idx}")
 
-        print("check_duplicates_articule Done!")
+        print("✅ check_duplicates_articule Done!")

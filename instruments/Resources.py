@@ -11,24 +11,6 @@ from instruments import config
 class Resources:
     def __init__(self):
 
-        # work file load
-        try:
-            self.work_file = openpyxl.load_workbook("new_filtered_data.xlsx")
-            self.work_sheet = self.work_file.active
-        except Exception as ex:
-            print(ex)
-            print("Problems with work_file load\n")
-
-        # export file load
-        try:
-            self.groups_file = openpyxl.load_workbook("add_groups.xlsx")
-            self.data_sheet = self.groups_file["Data"]
-            self.groups_sheet = self.groups_file["Groups"]
-        except Exception as ex:
-            print(ex)
-            print("Problems with add_groups.xlsx load\n")
-
-
         # Common data (usually does not need changes)
         try:
             self.blank_file = openpyxl.open("data/sample.xlsx")
@@ -48,9 +30,7 @@ class Resources:
 
     def close(self):
         try:
-            self.groups_file.close()
             self.blank_file.close()
-            self.work_file.close()
         except Exception as ex:
             print(ex)
             print("Cannot close files, chech all the excel files or Resources.py\n")

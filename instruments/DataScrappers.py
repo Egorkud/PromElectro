@@ -24,7 +24,7 @@ class DataScrappers(Resources):
         char_dict = {}
         counter = 43
 
-        for row in range(2, self.work_sheet.max_row + 1):
+        for row in range(89, self.work_sheet.max_row + 1):
             print(self.GREEN(f"{row}. Started"))
 
             url_search_ru = "https://feron.ua/search/?search="
@@ -136,33 +136,37 @@ class DataScrappers(Resources):
                         print(ex)
                         print("No instructions")
 
-                    # # Get photos
-                    # try:
-                    #     photo_data = (soup.find("div", class_="column_left-slider sliderss")
-                    #                   .find("div", class_="slider-nav_prod")
-                    #                   .find_all("img"))
-                    #
-                    #     photo_links = [link.get("href") for link in photo_data]
-                    #
-                    #     for id, link in enumerate(photo_links):
-                    #         output_folder = "downloaded_photos"
-                    #         os.makedirs(output_folder, exist_ok=True)
-                    #
-                    #         file_path_name = os.path.basename(urlparse(link).path)
-                    #         file_path = os.path.join(output_folder, file_path_name)
-                    #         photo_path_name = f"/content/images/ctproduct_image/feron"  # Needs INTPUT
-                    #         file_name = f"{file_path_name}_{id + 1}.jpg"
-                    #
-                    #         time.sleep(1 + random.uniform(1, 3))
-                    #         req = requests.get(link, headers=self.headers)
-                    #         with open(f"{file_path}_{id + 1}.jpg", "wb") as file:
-                    #             file.write(req.content)
-                    #
-                    #         self.blank_sheet.cell(row, 16 + id).value = f"{photo_path_name}/{file_name}"
-                    #
-                    # except Exception as ex:
-                    #     print(ex)
-                    #     print("No photos")
+                    # Get photos
+                    try:
+                        photo_data = (soup.find("div", class_="column_left-slider sliderss")
+                                      .find("div", class_="slider-nav_prod")
+                                      .find_all("img"))
+
+                        photo_links = [link.get("href") for link in photo_data]
+
+
+                        for id, link in enumerate(photo_links):
+                            try:
+                                output_folder = "downloaded_photos"
+                                os.makedirs(output_folder, exist_ok=True)
+
+                                file_path_name = os.path.basename(urlparse(link).path)
+                                file_path = os.path.join(output_folder, file_path_name)
+                                photo_path_name = f"/content/images/ctproduct_image/feron"  # Needs INTPUT
+                                file_name = f"{file_path_name}_{id + 1}.jpg"
+
+                                time.sleep(0.5 + random.uniform(1, 2))
+                                req = requests.get(link, headers=self.headers)
+                                with open(f"{file_path}_{id + 1}.jpg", "wb") as file:
+                                    file.write(req.content)
+
+                                self.blank_sheet.cell(row, 16 + id).value = f"{photo_path_name}/{file_name}"
+                            except:
+                                pass
+
+                    except Exception as ex:
+                        print(ex)
+                        print("No photos")
 
                     # # Get names ru ukr
                     # try:
