@@ -126,9 +126,9 @@ class DataScrappers(Resources):
                                 file_name = self.clean_pdf_name(title)
                                 file_path = Path(output_folder) / file_name
 
-                                self.save_pdf(file_path, req_pdf)
+                                new_file_name = self.save_pdf(file_path, req_pdf)
 
-                                server_file_path = f"/content/instructions/{file_name}"
+                                server_file_path = f"/content/instructions/{new_file_name}"
                                 self.blank_sheet.cell(row, 7).value = server_file_path
 
 
@@ -136,33 +136,33 @@ class DataScrappers(Resources):
                         print(ex)
                         print("No instructions")
 
-                    # Get photos
-                    try:
-                        photo_data = (soup.find("div", class_="column_left-slider sliderss")
-                                      .find("div", class_="slider-nav_prod")
-                                      .find_all("img"))
-
-                        photo_links = [link.get("href") for link in photo_data]
-
-                        for id, link in enumerate(photo_links):
-                            output_folder = "downloaded_photos"
-                            os.makedirs(output_folder, exist_ok=True)
-
-                            file_path_name = os.path.basename(urlparse(link).path)
-                            file_path = os.path.join(output_folder, file_path_name)
-                            photo_path_name = f"/content/images/ctproduct_image/feron"  # Needs INTPUT
-                            file_name = f"{file_path_name}_{id + 1}.jpg"
-
-                            time.sleep(1 + random.uniform(1, 3))
-                            req = requests.get(link, headers=self.headers)
-                            with open(f"{file_path}_{id + 1}.jpg", "wb") as file:
-                                file.write(req.content)
-
-                            self.blank_sheet.cell(row, 16 + id).value = f"{photo_path_name}/{file_name}"
-
-                    except Exception as ex:
-                        print(ex)
-                        print("No photos")
+                    # # Get photos
+                    # try:
+                    #     photo_data = (soup.find("div", class_="column_left-slider sliderss")
+                    #                   .find("div", class_="slider-nav_prod")
+                    #                   .find_all("img"))
+                    #
+                    #     photo_links = [link.get("href") for link in photo_data]
+                    #
+                    #     for id, link in enumerate(photo_links):
+                    #         output_folder = "downloaded_photos"
+                    #         os.makedirs(output_folder, exist_ok=True)
+                    #
+                    #         file_path_name = os.path.basename(urlparse(link).path)
+                    #         file_path = os.path.join(output_folder, file_path_name)
+                    #         photo_path_name = f"/content/images/ctproduct_image/feron"  # Needs INTPUT
+                    #         file_name = f"{file_path_name}_{id + 1}.jpg"
+                    #
+                    #         time.sleep(1 + random.uniform(1, 3))
+                    #         req = requests.get(link, headers=self.headers)
+                    #         with open(f"{file_path}_{id + 1}.jpg", "wb") as file:
+                    #             file.write(req.content)
+                    #
+                    #         self.blank_sheet.cell(row, 16 + id).value = f"{photo_path_name}/{file_name}"
+                    #
+                    # except Exception as ex:
+                    #     print(ex)
+                    #     print("No photos")
 
                     # # Get names ru ukr
                     # try:

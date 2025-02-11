@@ -1,6 +1,8 @@
 from io import BytesIO
 
 import openpyxl
+import hashlib
+from pathlib2 import Path
 from PyPDF2 import PdfReader
 from colorama import Fore, Back, Style, init
 from instruments import config
@@ -64,11 +66,24 @@ class Resources:
         return title
 
     @staticmethod
-    def save_pdf(file_path: str, request):
-        with open(file_path, "wb") as file:
-            for chunk in request.iter_content(chunk_size=1024):  # Кожен чанк - 1024 байти
-                if chunk:  # Перевіряємо, що чанк не порожній
-                    file.write(chunk)
+    def save_pdf(file_path: Path, request) -> str:
+        file_content = request.content  # Отримуємо вміст файлу
+        file_stem = file_path.stem  # Початкова назва без розширення
+        file_ext = file_path.suffix  # Розширення файлу (.pdf)
+
+        # Генеруємо хеш (беремо 8 символів для унікальності)
+        file_hash = hashlib.sha256(file_content).hexdigest()[:8]
+
+        # Формуємо нове ім'я файлу
+        new_file_name = f"{file_stem}_{file_hash}{file_ext}"
+        new_file_path = file_path.parent / new_file_name
+
+        # Записуємо файл
+        with open(new_file_path, "wb") as file:
+            file.write(file_content)
+
+        return new_file_name
+
 
     @staticmethod
     def clean_pdf_name(title : str):
