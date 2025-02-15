@@ -3,23 +3,17 @@ import os
 import requests
 import time
 import random
-import openpyxl
 from pathlib2 import Path
 from urllib.parse import urlparse
-from fake_useragent import UserAgent
+import openpyxl
 
+from instruments.BaseScrapper import BaseScrapper
 
-from instruments.Resources import Resources
-
-
-
-class DataScrappers(Resources):
+# Only for copy and make new data scrapper for new website
+class TemplateParser(BaseScrapper):
     def __init__(self):
         super().__init__()
 
-        self.headers = {
-            "User-Agent": UserAgent().random,
-        }
 
     def scrap(self, filename : str = "scrapped_data (instructions+photos).xlsx",
               export_file : str = "export.xlsx"):
@@ -62,6 +56,7 @@ class DataScrappers(Resources):
             self.blank_file.save(filename)
             time.sleep(1 + random.uniform(1, 3))
         print(self.GREEN(f"\nFile {filename} created"))
+
 
     def get_searched_item_link(self, url):
         """Шукає товар за артикулом та повертає його URL"""
