@@ -1,4 +1,9 @@
+from io import BytesIO
+
 import openpyxl
+import hashlib
+from pathlib2 import Path
+from PyPDF2 import PdfReader
 from colorama import Fore, Back, Style, init
 
 
@@ -27,3 +32,31 @@ class Resources:
     def close(self):
         self.blank_file.close()
 
+    # Returns title of the pdf file
+    @staticmethod
+    def read_pdf(request) -> str:
+        pdf_data = BytesIO(request.content)
+        pdf_reader = PdfReader(pdf_data)
+        metadata = pdf_reader.metadata
+        title = metadata.get("/Title", "Назва не знайдена")
+
+        return title
+
+    @staticmethod
+    def save_pdf(file_path: Path, request) -> str:
+        file_content = request.content  # Отримуємо вміст файлу
+        file_stem = file_path.stem  # Початкова назва без розширення
+        file_ext = file_path.suffix  # Розширення файлу (.pdf)
+
+        # Генеруємо хеш (беремо 8 символів для унікальності)
+        file_hash = hashlib.sha256(file_content).hexdigest()[:8]
+
+        # Формуємо нове ім'я файлу
+        new_file_name = f"{file_stem}_{file_hash}{file_ext}"
+        new_file_path = file_path.parent / new_file_name
+
+        # Записуємо файл
+        with open(new_file_path, "wb") as file:
+            file.write(file_content)
+
+        return new_file_name
