@@ -139,3 +139,24 @@ class DataInstruments(Resources):
                 print(f"{work_df.iloc[idx-2, 0]}: {idx}")
 
         print("Check for duplicates done!")
+
+
+    # Simply gets data from one file and write to empty sheet excel
+    def get_coloured_cells(self, file_name:str = "name.xlsx"):
+        counter = 1
+        work_sheet = openpyxl.open(file_name).active
+        for row in range(1, work_sheet.max_row + 1):
+
+            name = work_sheet.cell(row, 1).value
+            articule = work_sheet.cell(row, 3).value
+            cell_fill = work_sheet.cell(row, 11).fill
+
+            # Checks whether cell is coloured
+            if cell_fill.bgColor.rgb != "00000000":
+                print(row)
+                self.empty_sheet.cell(counter, 1).value = name
+                self.empty_sheet.cell(counter, 2).value = articule
+
+                counter += 1
+
+        self.book_empty.save("new_filtered_data.xlsx")
