@@ -1,6 +1,7 @@
 import openpyxl
 import os
-
+import pandas as pd
+from openpyxl.pivot.fields import Boolean
 from openpyxl.workbook import Workbook
 from pathlib2 import Path
 from pdf2image import convert_from_path
@@ -109,3 +110,32 @@ class DataInstruments(Resources):
                     f.write(img2pdf.convert(img_bytes))
 
                 print(f"Стиснуто: {file_name}")
+
+
+    # Можна поміняти файли місцями, щоб перевірити роботу про всяк випадок
+    # Для цього додано параметр reverse_check
+    @staticmethod
+    def check_duplicates_articule(export_file:str = "name.xlsx",
+                                  work_file:str = "name.xlsx",
+                                  reverse_check:bool = False):
+
+        # Завантажуємо дані з обраного стовпця (артикули)
+        export_df = pd.read_excel(export_file, usecols=[1])  # 0-based index → 2-й стовпець = index 1
+        work_df = pd.read_excel(work_file, usecols=[1])
+
+        # Розвертаємо перевірку файлів у іншу сторону
+        if reverse_check:
+            export_df, work_df = work_df, export_df
+
+        # Конвертуємо артикули в множину для швидкого пошуку
+        export_articles = set(export_df.iloc[:, 0].dropna())
+
+        # Перевіряємо наявність у множині
+        duplicates = work_df.iloc[:, 0].dropna().isin(export_articles)
+
+        # Виводимо рядки з дублями
+        for idx, is_duplicate in enumerate(duplicates, start=2):
+            if is_duplicate:
+                print(f"{work_df.iloc[idx-2, 0]}: {idx}")
+
+        print("Check for duplicates done!")

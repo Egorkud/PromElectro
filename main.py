@@ -7,8 +7,9 @@ from instruments.DataInstruments import DataInstruments
 def main():
     DI.init_project()
 
-    # DI.groups_filler()          # Autofill groups from groups_sheet (default "new_groups.xlsx")
-    # DI.compress_pdf_folder()    # Compress all the files by screenshotting pages
+    # DI.groups_filler()                # Autofill groups from groups_sheet (default "new_groups.xlsx")
+    # DI.compress_pdf_folder()          # Compress all the files by screenshotting pages
+    # DI.check_duplicates_articule()    # Checks for duplicates between two files
 
 
 if __name__ == '__main__':
