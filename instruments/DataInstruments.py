@@ -1,9 +1,13 @@
 import openpyxl
 import os
+
+from openpyxl.workbook import Workbook
+from pathlib2 import Path
 from pdf2image import convert_from_path
 from io import BytesIO
 import img2pdf
 
+from instruments import config
 from instruments.Resources import Resources
 
 
@@ -12,7 +16,39 @@ class DataInstruments(Resources):
         super().__init__()
 
     def init_project(self):
-        ...
+        def create_path(*files):
+            for i in files:
+                if not i.exists():
+                    if i.suffix:
+                        i.touch(exist_ok=True)
+                        print(self.GREEN(f"File '{i}' created"))
+                    else:
+                        i.mkdir(exist_ok=True)
+                        print(self.GREEN(f"Directory '{i}' created"))
+
+        print(self.BLUE("\nProject initialisation started\n"))
+        # Crete folders (convenience purpose)
+        folders = ("import_done", "import_queue", "temp_old")
+        create_path(*(Path(i) for i in folders))
+
+        # Create data directory and files inside
+        data_dir = Path("data")
+        sample_file = data_dir / "sample.xlsx"
+
+        if not sample_file.exists():
+            create_path(data_dir, sample_file)
+
+            wb = Workbook()
+            sheet = wb.active
+            sheet.title = "Sheet"
+
+            for id, name in config.PRODUCT_COLUMNS.items():
+                sheet.cell(1, id).value = name
+
+            wb.save(sample_file)
+            print(self.GREEN(f"File {sample_file} was filled"))
+
+        print(self.BLUE("\nProject initialisation finished\n"))
 
     # Fill descriptions from descriptions sheet.
     # Column 1. Name or id as convenient
