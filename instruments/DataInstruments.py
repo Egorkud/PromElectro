@@ -1,8 +1,8 @@
-import random
-import time
-import requests
-from bs4 import BeautifulSoup
 import openpyxl
+import os
+from pdf2image import convert_from_path
+from io import BytesIO
+import img2pdf
 
 from instruments.Resources import Resources
 
@@ -17,7 +17,9 @@ class DataInstruments(Resources):
     # Fill descriptions from descriptions sheet.
     # Column 1. Name or id as convenient
     # Column 2. Group name (full path to group).
-    def groups_filler(self, filename : str = "new_groups.xlsx", export_file : str = "export.xlsx"):
+    def groups_filler(self,
+                      filename:str = "new_groups.xlsx",
+                      export_file:str = "export.xlsx"):
         groups_dict = {}
         export_file = openpyxl.open(export_file)
         export_sheet = export_file["export sheet"]
@@ -39,3 +41,35 @@ class DataInstruments(Resources):
 
         export_file.save(filename)
         print(self.GREEN(f"\nFile {filename} created"))
+
+
+    # Compress all the files by screenshotting pages
+    @staticmethod
+    def compress_pdf_folder(input_folder:str = "downloaded_pdfs",
+                            output_folder:str = "compressed_pdfs",
+                            dpi:int = 200):
+        # Потрібно завантажити цей інструмент та можна просто додати в
+        # директорію проєкту та далі вказати тут шлях до нього
+        poppler_path = r"../data/poppler-24.08.0/Library/bin"
+
+        # Створюємо вихідну папку, якщо її немає
+        os.makedirs(output_folder, exist_ok=True)
+
+        # Перебираємо всі файли в папці
+        for file_name in os.listdir(input_folder):
+            if file_name.lower().endswith(".pdf"):
+                input_pdf = os.path.join(input_folder, file_name)
+                output_pdf = os.path.join(output_folder, file_name)
+
+                images = convert_from_path(input_pdf, dpi=dpi, poppler_path=poppler_path)
+
+                img_bytes = []
+                for img in images:
+                    img_buffer = BytesIO()
+                    img.save(img_buffer, format="JPEG", quality=50)  # Стиснення JPEG
+                    img_bytes.append(img_buffer.getvalue())
+
+                with open(output_pdf, "wb") as f:
+                    f.write(img2pdf.convert(img_bytes))
+
+                print(f"Стиснуто: {file_name}")

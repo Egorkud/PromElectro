@@ -7,7 +7,8 @@ from instruments.DataInstruments import DataInstruments
 def main():
     DI.init_project()
 
-    DI.groups_filler()          # Autofill groups from groups_sheet (default "new_groups.xlsx")
+    # DI.groups_filler()          # Autofill groups from groups_sheet (default "new_groups.xlsx")
+    # DI.compress_pdf_folder()    # Compress all the files by screenshotting pages
 
 
 if __name__ == '__main__':
