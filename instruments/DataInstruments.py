@@ -167,3 +167,72 @@ class DataInstruments(Resources):
                 counter += 1
 
         self.book_empty.save("new_filtered_data.xlsx")
+
+    @staticmethod
+    def name_changer(input_file:str = "import_queue/Освещение=Светильники.xlsm",
+                     output_file:str = "import_queue/New_names.xlsx",
+                     col_name1:int = 4,
+                     col_name2:int = 5,
+                     col_article:int = 2,
+                     col_group:int = 3,
+                     selected_group:str = "Освещение=>Светильники=>Бытовые светильники=>Точечные светильники",
+                     attribute_cols:set = (109, 100, 77)):
+        """
+           Оновлює дві колонки назв, додаючи перед артикулом дані з вказаних колонок,
+           але тільки для товарів, що належать до заданої групи.
+           Рядки, які не підходять, пропускаються.
+
+           :param input_file: Назва вхідного файлу Excel
+           :param output_file: Назва вихідного файлу Excel
+           :param col_name1: Номер першої колонки з назвами (1-індекс)
+           :param col_name2: Номер другої колонки з назвами (1-індекс)
+           :param col_article: Номер колонки з артикулами (1-індекс)
+           :param col_group: Номер колонки з групою товарів (1-індекс)
+           :param selected_group: Назва групи, за якою фільтруємо
+           :param attribute_cols: Номери колонок (1-індекс), дані яких вставлятимуться в назву
+        """
+
+        # Завантажуємо дані
+        df = pd.read_excel(input_file, dtype=str)
+
+        # Конвертуємо індексацію (Excel → Python, тобто віднімаємо 1)
+        col_name1 -= 1
+        col_name2 -= 1
+        col_article -= 1
+        col_group -= 1
+        attribute_cols = {col - 1 for col in attribute_cols}
+
+        # Отримуємо назви колонок
+        name_col1 = df.columns[col_name1]
+        name_col2 = df.columns[col_name2]
+        article_col = df.columns[col_article]
+        group_col = df.columns[col_group]
+        attribute_columns = [df.columns[i] for i in attribute_cols]
+
+        def modify_name(row, name_col):
+            name = row[name_col]
+            article = str(row[article_col])
+
+            # Збираємо атрибути
+            attributes = " ".join(str(row[col]) for col in attribute_columns if pd.notna(row[col]))
+
+            # Якщо артикул є у назві — вставляємо перед ним атрибути
+            if article in name:
+                return name.replace(article, attributes + " " + article)
+
+            return name  # Якщо артикул не знайдено, залишаємо без змін
+
+        # Фільтруємо рядки тільки для обраної групи
+        df_filtered = df[df[group_col] == selected_group].copy()
+
+        # Оновлюємо обидві колонки назв
+        df_filtered["Оновлена Назва (RU)"] = df_filtered.apply(lambda row: modify_name(row, name_col1), axis=1)
+        df_filtered["Оновлена Назва (UA)"] = df_filtered.apply(lambda row: modify_name(row, name_col2), axis=1)
+
+        # Зберігаємо тільки артикул + оновлені назви
+        df_result = df_filtered[[df.columns[col_article], "Оновлена Назва (RU)", "Оновлена Назва (UA)"]]
+
+        # Зберігаємо результат без пустих рядків
+        df_result.to_excel(output_file, index=False, engine="openpyxl")
+
+        print(f"✅ Файл збережено: {output_file}, збережено {len(df_result)} рядків")
