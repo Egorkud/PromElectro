@@ -9,10 +9,10 @@ def main():
 
     # DI.name_changer()
 
-    # DI.groups_filler()                # Autofill groups from groups_sheet (default "new_groups.xlsx")
-    # DI.compress_pdf_folder()          # Compress all the files by screenshotting pages
-    # DI.check_duplicates_articule()    # Checks for duplicates between two files
-    # DI.get_coloured_cells()           # Checks for coloured cells in file and write them to empty file
+    # DI.groups_filler()                      # Autofill groups from groups_sheet (default "new_groups.xlsx")
+    # DI.compress_pdf_folder()                # Compress all the files by screenshotting pages
+    # DI.check_duplicates_articule("", "")    # Checks for duplicates between two files
+    # DI.get_coloured_cells()                 # Checks for coloured cells in file and write them to empty file
 
 
 if __name__ == '__main__':

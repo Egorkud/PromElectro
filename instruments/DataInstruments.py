@@ -1,4 +1,5 @@
 import openpyxl
+from openpyxl import load_workbook
 import os
 import pandas as pd
 from openpyxl.workbook import Workbook
@@ -122,30 +123,66 @@ class DataInstruments(Resources):
     # Можна поміняти файли місцями, щоб перевірити роботу про всяк випадок
     # Для цього додано параметр reverse_check
     @staticmethod
-    def check_duplicates_articule(export_file:str = "name.xlsx",
-                                  work_file:str = "name.xlsx",
-                                  reverse_check:bool = False):
+    def check_duplicates_articule(export_file: str = "name.xlsx",
+                                  work_file: str = "name.xlsx",
+                                  duplicates_file: str = "duplicates.xlsx",
+                                  unique_file: str = "unique.xlsx",
+                                  export_cols: tuple = (1, 2),  # (артикул, назва товару)
+                                  work_cols: tuple = (1, 2)):
 
-        # Завантажуємо дані з обраного стовпця (артикули)
-        export_df = pd.read_excel(export_file, usecols=[1])  # 0-based index → 2-й стовпець = index 1
-        work_df = pd.read_excel(work_file, usecols=[1])
+        # Завантажуємо файли через pandas
+        export_df = pd.read_excel(export_file, usecols=list(export_cols))
+        work_df = pd.read_excel(work_file, usecols=list(work_cols))
 
-        # Розвертаємо перевірку файлів у іншу сторону
-        if reverse_check:
-            export_df, work_df = work_df, export_df
+        # Завантажуємо оригінальний файл через openpyxl (для отримання гіперпосилань)
+        wb = load_workbook(work_file, data_only=True)
+        ws = wb.active
 
-        # Конвертуємо артикули в множину для швидкого пошуку
-        export_articles = set(export_df.iloc[:, 0].dropna())
+        # Конвертуємо артикули в множину для швидкого пошуку (з .strip())
+        export_articles = set(export_df.iloc[:, 0].dropna().astype(str).str.strip())
 
-        # Перевіряємо наявність у множині
-        duplicates = work_df.iloc[:, 0].dropna().isin(export_articles)
+        # Фільтруємо дублікати та унікальні записи
+        work_df = work_df.dropna(subset=[work_df.columns[0]])
+        work_df["Артикул"] = work_df.iloc[:, 0].astype(str).str.strip()
+        work_df["Назва"] = work_df.iloc[:, 1]
 
-        # Виводимо рядки з дублями
-        for idx, is_duplicate in enumerate(duplicates, start=2):
-            if is_duplicate:
-                print(f"{work_df.iloc[idx-2, 0]}: {idx}")
+        # Отримуємо URL із гіпертексту у стовпці "Назва товару"
+        work_df["Посилання"] = None
+        for row_idx in range(2, ws.max_row + 1):  # Починаємо з 2-го рядка (1-й = заголовки)
+            cell = ws.cell(row=row_idx, column=work_cols[1] + 1)  # Колонка з назвами товарів
+            if cell.hyperlink:
+                work_df.at[row_idx - 2, "Посилання"] = cell.hyperlink.target  # Зберігаємо URL
 
-        print("Check for duplicates done!")
+        # Визначаємо дублікати
+        work_df["Дублікат"] = work_df["Артикул"].isin(export_articles)
+        duplicates = work_df[work_df["Дублікат"]][["Артикул", "Назва", "Посилання"]]
+        unique = work_df[~work_df["Дублікат"]][["Артикул", "Назва", "Посилання"]]
+
+        # Функція для збереження у файл
+        def save_to_excel(df, filename, sheet_name):
+            wb_out = Workbook()
+            ws_out = wb_out.active
+            ws_out.title = sheet_name
+
+            # Записуємо заголовки
+            headers = ["Артикул", "Назва товару", "Посилання"]
+            ws_out.append(headers)
+
+            # Записуємо дані
+            for row in df.itertuples(index=False):
+                ws_out.append(list(row))
+
+            # Зберігаємо файл
+            wb_out.save(filename)
+
+        # Збереження дублікатів
+        save_to_excel(duplicates, duplicates_file, "Дублікати")
+
+        # Збереження унікальних товарів
+        save_to_excel(unique, unique_file, "Унікальні")
+
+        print(f"✅ Дублікати збережено у '{duplicates_file}'")
+        print(f"✅ Унікальні товари збережено у '{unique_file}'")
 
 
     # Simply gets data from one file and write to empty sheet excel
