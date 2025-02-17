@@ -15,8 +15,8 @@ class TemplateParser(BaseScrapper):
         super().__init__()
 
 
-    def scrap(self, filename : str = "scrapped_data (instructions+photos).xlsx",
-              export_file : str = "export.xlsx"):
+    def scrap(self, filename: str = "scrapped_data(full).xlsx",
+              export_file: str = "export.xlsx"):
         char_dict = {}
         counter = 43
         work_sheet = openpyxl.open(export_file).active
@@ -44,7 +44,7 @@ class TemplateParser(BaseScrapper):
             req = requests.get(searched_item_link, headers=self.headers)
             soup = BeautifulSoup(req.text, "lxml")
 
-            """Обираємо необхідний парсер і реалізуємо його роботу в своїй гілці"""
+            """Обираємо необхідний парсер і реалізуємо його роботу в окремому файлі"""
             # Uncomment necessary scrappers
             self.get_characteristics(soup, char_dict, counter, row)
             self.download_instruction(soup, row)
@@ -80,10 +80,7 @@ class TemplateParser(BaseScrapper):
             key, value = ..., ...
 
             # Check if new char name is not in char dick
-            if key not in char_dict.keys():
-                char_dict.update([(key, counter)])
-                self.blank_sheet.cell(1, counter).value = key
-                counter += 1
+            counter, char_dict = self.check_key(key, char_dict, counter)
 
             # Adding characteristics
             char_col = char_dict[key]
@@ -101,19 +98,7 @@ class TemplateParser(BaseScrapper):
 
             instruction_link = ...
 
-            output_folder = "downloaded_pdfs"
-            os.makedirs(output_folder, exist_ok=True)
-
-            time.sleep(1 + random.uniform(1, 2))
-            req_pdf = requests.get(instruction_link, headers=self.headers)
-            title = self.read_pdf(req_pdf)
-            file_name = Path(title).stem
-            file_path_no_hash = Path(output_folder) / file_name
-
-            file_name_with_hash = self.save_pdf(file_path_no_hash, req_pdf)
-
-            server_file_path = f"/content/instructions/{file_name_with_hash}"
-            self.blank_sheet.cell(row, 7).value = server_file_path
+            self.download_instruction_file(instruction_link, row)
 
         except Exception as ex:
             print(ex)
@@ -144,25 +129,7 @@ class TemplateParser(BaseScrapper):
 
             photo_links = [link.get("href") for link in photo_data]
 
-            for id, link in enumerate(photo_links):
-                try:
-                    output_folder = "downloaded_photos"
-                    os.makedirs(output_folder, exist_ok=True)
-
-                    file_path_name = os.path.basename(urlparse(link).path)
-                    file_path_no_hash = os.path.join(output_folder, file_path_name)
-                    photo_path_name = f"/content/images/ctproduct_image/FOLDER_NAME"  # Needs INTPUT
-                    file_name = f"{file_path_name}_{id + 1}.jpg"
-
-                    time.sleep(0.5 + random.uniform(1, 2))
-                    req = requests.get(link, headers=self.headers)
-                    with open(f"{file_path_no_hash}_{id + 1}.jpg", "wb") as file:
-                        file.write(req.content)
-
-                    self.blank_sheet.cell(row, 16 + id).value = f"{photo_path_name}/{file_name}"
-                except:
-                    pass
-
+            self.download_photos(photo_links, row)
         except Exception as ex:
             print(ex)
             print("No photos")
