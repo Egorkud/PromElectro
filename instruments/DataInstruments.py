@@ -1,7 +1,6 @@
 import openpyxl
 import os
 import pandas as pd
-from openpyxl.pivot.fields import Boolean
 from openpyxl.workbook import Workbook
 from pathlib2 import Path
 from pdf2image import convert_from_path
@@ -27,6 +26,23 @@ class DataInstruments(Resources):
                         i.mkdir(exist_ok=True)
                         print(self.GREEN(f"Directory '{i}' created"))
 
+        def create_excel_file(file_path, columns):
+            """Створює Excel-файл з вказаними заголовками, якщо він не існує."""
+            if file_path.exists():
+                return
+
+            create_path(file_path.parent, file_path)
+
+            wb = Workbook()
+            sheet = wb.active
+            sheet.title = "Sheet"
+
+            for col_id, col_name in columns.items():
+                sheet.cell(1, col_id).value = col_name
+
+            wb.save(file_path)
+            print(self.GREEN(f"File {file_path} was filled"))
+
         print(self.BLUE("\nProject initialisation started\n"))
         # Crete folders (convenience purpose)
         folders = ("import_done", "import_queue", "temp_old")
@@ -35,19 +51,10 @@ class DataInstruments(Resources):
         # Create data directory and files inside
         data_dir = Path("data")
         sample_file = data_dir / "sample.xlsx"
+        names_data_file = data_dir / "names_data.xlsx"
 
-        if not sample_file.exists():
-            create_path(data_dir, sample_file)
-
-            wb = Workbook()
-            sheet = wb.active
-            sheet.title = "Sheet"
-
-            for id, name in config.PRODUCT_COLUMNS.items():
-                sheet.cell(1, id).value = name
-
-            wb.save(sample_file)
-            print(self.GREEN(f"File {sample_file} was filled"))
+        create_excel_file(sample_file, config.SAMPLE_PRODUCT_COLUMNS)
+        create_excel_file(names_data_file, config.NAMES_DATA_COLUMNS)
 
         print(self.BLUE("\nProject initialisation finished\n"))
 

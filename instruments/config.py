@@ -1,4 +1,4 @@
-PRODUCT_COLUMNS = {
+SAMPLE_PRODUCT_COLUMNS = {
     1: "Код товара",
     2: "Артикул",
     3: "Категория",
@@ -20,4 +20,14 @@ PRODUCT_COLUMNS = {
 
     # С этим товаром покупают № 1-12; cells: 31 - 42
     **{i: f"С этим товаром покупают № {i - 30}" for i in range(31, 42 + 1)},
+}
+
+NAMES_DATA_COLUMNS = {
+    1: "Item type RU",
+    2: "Item type UKR",
+    3: "Last name RU",
+    4: "Last name UKR",
+    5: "Item articule",
+    6: "Series",
+    7: "Manufacturer",
 }
