@@ -196,6 +196,9 @@ class TemplateParser(BaseScrapper):
 
                 self.blank_sheet.cell(row, 4 + idx).value = new_name
 
+                # Save names data
+                self.save_names_data(item_type, last_name, item_articule, series, manufacturer, row, idx)
+
             except Exception as ex:
                 print(ex)
                 print("No name or manufacturer name")

@@ -1,4 +1,5 @@
 import hashlib
+import openpyxl
 from pathlib2 import Path
 from PyPDF2 import PdfReader
 from io import BytesIO
@@ -44,3 +45,12 @@ class BaseScrapper(Resources):
             file.write(file_content)
 
         return new_file_name
+
+    def save_names_data(self, item_type, last_name, item_articule, series, manufacturer, row, idx):
+        self.names_sheet.cell(row, 1 + idx).value = item_type
+        self.names_sheet.cell(row, 3 + idx).value = last_name
+        self.names_sheet.cell(row, 5).value = item_articule
+        self.names_sheet.cell(row, 6).value = series
+        self.names_sheet.cell(row, 7).value = manufacturer
+
+        self.book_names_data.save("Names_data.xlsx")
