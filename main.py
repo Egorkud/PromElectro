@@ -15,7 +15,7 @@ def main():
     # DI.compress_pdf_folder()                # Compress all the files by screenshotting pages
     # DI.check_duplicates_articule("", "")    # Checks for duplicates between two files
     # DI.get_coloured_cells()                 # Checks for coloured cells in file and write them to empty file
-
+    # DI.get_code_row()                       # Create file with codes divided by commas
 
 if __name__ == '__main__':
     start = time.time()

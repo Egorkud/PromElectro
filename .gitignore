@@ -1,6 +1,7 @@
 ### Python + .idea ignore template
 ### Python template
 /data
+/output_codes.txt
 *.xlsx
 *.xls
 *.xlsm

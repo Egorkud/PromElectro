@@ -273,3 +273,19 @@ class DataInstruments(Resources):
         df_result.to_excel(output_file, index=False, engine="openpyxl")
 
         print(f"✅ Файл збережено: {output_file}, збережено {len(df_result)} рядків")
+
+    @staticmethod
+    def get_code_row(input_file: str = "website_positions.xlsx",
+                     output_file: str = "output_codes.txt"):
+
+        # Зчитуємо тільки 1-й стовпець (index 0) без заголовків
+        df = pd.read_excel(input_file, usecols=[0], dtype=str, engine='openpyxl')
+
+        # Видаляємо порожні значення та дублікати
+        unique_codes = df.iloc[:, 0].dropna().unique()
+
+        # Швидкий запис у файл через кому
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(",".join(unique_codes))
+
+        print(f"Збережено {len(unique_codes)} кодів у {output_file}")
