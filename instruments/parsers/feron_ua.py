@@ -1,16 +1,13 @@
 from bs4 import BeautifulSoup
-import os
 import requests
 import time
 import random
-from pathlib2 import Path
-from urllib.parse import urlparse
 import openpyxl
 
-from instruments.BaseScrapper import BaseScrapper
+from instruments.BaseParser import BaseParser
 
 
-class Feron_ua(BaseScrapper):
+class Feron_ua(BaseParser):
     def __init__(self):
         super().__init__()
 

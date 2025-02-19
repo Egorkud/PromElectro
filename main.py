@@ -1,10 +1,8 @@
-import os
 import time
 from dotenv import load_dotenv
 
 from instruments.Resources import Resources
 from instruments.DataInstruments import DataInstruments
-from instruments.parsers.feron_ua import Feron_ua
 
 
 def main():

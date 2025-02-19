@@ -7,18 +7,17 @@ from pathlib2 import Path
 from urllib.parse import urlparse
 import openpyxl
 
-from instruments.BaseScrapper import BaseScrapper
+from instruments.BaseParser import BaseParser
 
 # Only for copy and make new data scrapper for new website
-class TemplateParser(BaseScrapper):
+class TemplateParser(BaseParser):
     def __init__(self):
         super().__init__()
 
 
     def scrap(self, filename: str = "scrapped_data(full).xlsx",
               export_file: str = "export.xlsx"):
-        char_dict = {}
-        counter = 43
+
         work_sheet = openpyxl.open(export_file).active
 
         for row in range(2, work_sheet.max_row + 1):
@@ -27,7 +26,7 @@ class TemplateParser(BaseScrapper):
             item_articule = work_sheet.cell(row, 2).value
             self.blank_sheet.cell(row, 2).value = item_articule
 
-            url_search_ru = "website searching ling"    # Need to add searching link
+            url_search_ru = "website searching link"    # Need to add searching link
             url = f"{url_search_ru}{item_articule}"
 
             searched_item_link = self.get_searched_item_link(url)
@@ -39,14 +38,14 @@ class TemplateParser(BaseScrapper):
 
             # If there is necessary to scrap UKR version, it is important for names and descriptions
             ukr_link = searched_item_link.replace(..., ...)  # Old link to new UKR link
-            two_lang_links = [searched_item_link, ukr_link]
+            two_lang_links = (searched_item_link, ukr_link)
 
             req = requests.get(searched_item_link, headers=self.headers)
             soup = BeautifulSoup(req.text, "lxml")
 
             """Обираємо необхідний парсер і реалізуємо його роботу в окремому файлі"""
             # Uncomment necessary scrappers
-            self.get_characteristics(soup, char_dict, counter, row)
+            self.get_characteristics(soup, row)
             self.download_instruction(soup, row)
             self.get_descriptions(two_lang_links, row)
             self.get_photos(soup, row)
@@ -56,7 +55,8 @@ class TemplateParser(BaseScrapper):
             self.blank_file.save(filename)
             time.sleep(1 + random.uniform(1, 3))
         print(self.GREEN(f"\nFile {filename} created"))
-
+        print(self.GREEN(f"Total photo count: {self.images_counter}"))
+        print(self.GREEN(f"Total descriptions count: {self.instructions_counter}"))
 
     def get_searched_item_link(self, url):
         """Шукає товар за артикулом та повертає його URL"""
@@ -69,7 +69,7 @@ class TemplateParser(BaseScrapper):
             print(self.RED(f"Error getting search link: {ex}"))
             return None
 
-    def get_characteristics(self, soup, char_dict, counter, row):
+    def get_characteristics(self, soup, row):
         """Отримує характеристики товару"""
         try:
             characteristics = soup.find(...)  # Get characteristics
@@ -80,10 +80,10 @@ class TemplateParser(BaseScrapper):
             key, value = ..., ...
 
             # Check if new char name is not in char dick
-            counter, char_dict = self.check_key(key, char_dict, counter)
+            self.check_key(key)
 
             # Adding characteristics
-            char_col = char_dict[key]
+            char_col = self.char_dict[key]
             self.blank_sheet.cell(row, char_col).value = value
 
         except Exception as ex:
@@ -129,7 +129,7 @@ class TemplateParser(BaseScrapper):
 
             photo_links = [link.get("href") for link in photo_data]
 
-            self.download_photos(photo_links, row)
+            self.download_photos(photo_links, row, "folder_name") # Input folder name
         except Exception as ex:
             print(ex)
             print("No photos")
@@ -164,7 +164,7 @@ class TemplateParser(BaseScrapper):
                 self.blank_sheet.cell(row, 4 + idx).value = new_name
 
                 # Save names data
-                self.save_names_data(item_type, last_name, item_articule, series, manufacturer, row, idx)
+                self.save_names_data("filename", item_type, last_name, item_articule, series, manufacturer, row, idx)
 
             except Exception as ex:
                 print(ex)
