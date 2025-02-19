@@ -289,3 +289,38 @@ class DataInstruments(Resources):
             f.write(",".join(unique_codes))
 
         print(f"Збережено {len(unique_codes)} кодів у {output_file}")
+
+    @staticmethod
+    def extract_unique_categories(folder_path: str = "import_done",
+                                  output_file: str = "unique_categories.xlsx",
+                                  col_category: int = 3):
+        """
+            Збирає унікальні категорії товарів з усіх Excel-файлів у папці.
+
+            :param folder_path: Шлях до папки з Excel-файлами.
+            :param output_file: Назва файлу для збереження унікальних категорій.
+            :param col_category: Номер колонки (1-індекс), у якій знаходиться категорія товару.
+            """
+        unique_categories = set()
+
+        # Перетворюємо індексацію (Excel → Python, тобто віднімаємо 1)
+        col_category -= 1
+
+        # Проходимо по всіх файлах у папці
+        for file in Path(folder_path).iterdir():
+            if file.suffix in {".xls", ".xlsx", ".xlsm"}:  # Фільтр тільки для Excel-файлів
+                try:
+                    df = pd.read_excel(file, dtype=str, usecols=[col_category])  # Читаємо лише потрібну колонку
+                    unique_categories.update(df.iloc[:, 0].dropna().unique())  # Додаємо унікальні значення
+                    print(f"Опрацьовано: {file.name}")
+                except Exception as e:
+                    print(f"❌ Помилка обробки {file.name}: {e}")
+
+        # Сортуємо категорії
+        sorted_categories = sorted(unique_categories)
+
+        # Зберігаємо результат
+        df_result = pd.DataFrame(sorted_categories, columns=["Унікальні категорії"])
+        df_result.to_excel(output_file, index=False, engine="openpyxl")
+
+        print(f"✅ Файл збережено: {output_file} (всього {len(sorted_categories)} унікальних категорій)")
