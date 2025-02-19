@@ -2,6 +2,7 @@
 ### Python template
 /data
 /output_codes.txt
+.env
 *.xlsx
 *.xls
 *.xlsm

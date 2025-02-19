@@ -1,3 +1,4 @@
+import time
 import openpyxl
 from openpyxl import load_workbook
 import os
@@ -7,6 +8,15 @@ from pathlib2 import Path
 from pdf2image import convert_from_path
 from io import BytesIO
 import img2pdf
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+
 
 from instruments import config
 from instruments.Resources import Resources
@@ -46,7 +56,7 @@ class DataInstruments(Resources):
 
         print(self.BLUE("\nProject initialisation started\n"))
         # Crete folders (convenience purpose)
-        folders = ("import_done", "import_queue", "temp_old")
+        folders = ("import_done", "import_queue", "temp_old", "downloaded_groups")
         create_path(*(Path(i) for i in folders))
 
         # Create data directory and files inside
@@ -324,3 +334,109 @@ class DataInstruments(Resources):
         df_result.to_excel(output_file, index=False, engine="openpyxl")
 
         print(f"✅ Файл збережено: {output_file} (всього {len(sorted_categories)} унікальних категорій)")
+
+    @staticmethod
+    def download_categories(headless: bool = False,
+                            login: str = os.getenv("login"),
+                            password: str =  os.getenv("password"),
+                            category_file: str = "unique_categories.xlsx",
+                            product_range: str = "1-100000"):
+        """
+            Запускає браузер через Selenium, використовуючи webdriver-manager для автоматичного завантаження драйвера.\n
+            Для створення файлу є метод extract_unique_categories().
+
+            :param headless: Якщо True, браузер запускається без інтерфейсу (фоновий режим).
+            :param login: Логін потрібно брати зі змінної середовища або передавати методу.
+            :param password: Пароль потрібно брати зі змінної середовища або передавати методу.
+            :param category_file: Шлях до ексель-файлу з категоріями.
+            :param product_range: Діапазон товарів, який потрібно встановити (наприклад, "1-100000").
+            """
+
+        if not Path(category_file).exists():
+            print(f"Error, there is no such file: {category_file}")
+            return
+
+        # region Driver initialisation
+        options = webdriver.ChromeOptions()
+
+        if headless:
+            options.add_argument("--headless")  # Фоновий режим (без UI)
+
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--start-maximized")  # Відкриває в повному екрані
+
+        # Автоматичне встановлення драйвера
+        service = Service(ChromeDriverManager().install())
+
+        # Запускаємо браузер
+        driver = webdriver.Chrome(service=service, options=options)
+        # endregion
+
+        try:
+            # 1. Зчитування категорій з файлу
+            df = pd.read_excel(category_file, dtype=str)
+            categories = df.iloc[:, 0].dropna().tolist()  # Беремо перший стовпець
+
+            # 2. Вхід на сайт
+            driver.get("https://a.electro-market.com.ua/")
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//input[@type="text"]')))
+
+            # Вводимо логін і пароль та автентифікуємося
+            driver.find_element(By.XPATH, '//input[@type="text"]').send_keys(login)
+            driver.find_element(By.XPATH, '//input[@type="password"]').send_keys(password + Keys.RETURN)
+            WebDriverWait(driver, 10).until(EC.url_contains("s_admin"))  # Чекаємо на редірект
+
+            print("Авторизація успішна!")
+
+            # 3. Перехід на сторінку експорту
+            driver.get("https://a.electro-market.com.ua/s_admin/ru/catalogue/import-export/export/")
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, "//button[contains(text(), 'Загрузить')]")))
+
+            print("Перехід до сторінки експорту...")
+
+            # 4. Зміна значення "1-5000" на власне
+            product_range_input = driver.find_element(By.ID, "products")
+            product_range_input.clear()  # Очистка поля
+            product_range_input.send_keys(product_range)
+            print(f"Items range: {product_range}")
+            time.sleep(1)
+
+            print(f"Знайдено {len(categories)} категорій!")
+
+            for idx, category in enumerate(categories):
+                print(f"\n🔎 {idx + 1}. Обробка категорії: {category}")
+
+                levels = category.split("=>")  # Розділяємо рівні вкладеності
+                last_level = levels[-1].strip()  # Беремо лише останній рівень категорії
+
+                try:
+                    # 5. Знаходимо та клікаємо лише на останню категорію
+                    last_xpath = f"//span[contains(text(), '{last_level}')]"
+                    category_element = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable((By.XPATH, last_xpath)))
+
+                    # Використовуємо ActionChains для точного кліку
+                    ActionChains(driver).move_to_element(category_element).click().perform()
+                    time.sleep(1)
+
+                    print(f"✅ Категорія '{last_level}' вибрана!")
+
+                    # 6. Натискаємо кнопку "Загрузить"
+                    download_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Загрузить')]")
+                    download_button.click()
+                    print(f"📥 Завантаження для '{last_level}' розпочато!")
+                    time.sleep(8)  # Чекаємо завантаження, якщо виникатимуть помилки - збільшити час
+
+                    # 7. Повторне натискання для скидання попереднього вибору
+                    ActionChains(driver).move_to_element(category_element).click().perform()
+                    time.sleep(1)
+
+                except Exception as e:
+                    print(f"❌ Не вдалося знайти категорію '{category}': {e}")
+
+            print("\n✅ Завантаження завершено!")
+
+        finally:
+            driver.quit()  # Закриваємо браузер після завершення роботи

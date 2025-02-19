@@ -1,4 +1,6 @@
+import os
 import time
+from dotenv import load_dotenv
 
 from instruments.Resources import Resources
 from instruments.DataInstruments import DataInstruments
@@ -16,11 +18,14 @@ def main():
     # DI.check_duplicates_articule("", "")    # Checks for duplicates between two files
     # DI.get_coloured_cells()                 # Checks for coloured cells in file and write them to empty file
     # DI.get_code_row()                       # Create file with codes divided by commas
+
     # DI.extract_unique_categories()          # Creates file with unique categories from xlsx files in folder
+    # DI.download_categories(True)            # Selenium downloads categories files from categories file
 
 if __name__ == '__main__':
     start = time.time()
 
+    load_dotenv()
     res, DI = Resources(), DataInstruments()
     main()
     res.close()
