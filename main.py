@@ -8,8 +8,6 @@ from instruments.DataInstruments import DataInstruments
 def main():
     DI.init_project()
 
-    # Feron_ua().scrap()
-
     # DI.name_changer()                       # Change names according to settings
     # DI.groups_filler()                      # Autofill groups from groups_sheet (default "new_groups.xlsx")
     # DI.compress_pdf_folder()                # Compress all the files by screenshotting pages
