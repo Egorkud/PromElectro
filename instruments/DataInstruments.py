@@ -4,10 +4,12 @@ from openpyxl import load_workbook
 import os
 import pandas as pd
 from openpyxl.workbook import Workbook
+from openpyxl.styles import PatternFill
 from pathlib2 import Path
 from pdf2image import convert_from_path
 from io import BytesIO
 import img2pdf
+import shutil
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -440,3 +442,167 @@ class DataInstruments(Resources):
 
         finally:
             driver.quit()  # Закриваємо браузер після завершення роботи
+
+    @staticmethod
+    def process_excel_files(directory: str = "downloaded_groups",
+                            article_file: str = None,
+                            new_data_file: str = None,
+                            max_columns: int = 42):
+        """
+        Обробляє всі Excel-файли у вказаній папці:
+        - Перевіряє, чи всі товари мають одну категорію у 3-й колонці, та перейменовує файл.
+        - Конвертує .xls → .xlsx зі збереженням форматування.
+        - Форматує Excel (row height 15, freeze top row, auto filter).
+        - Зафарбовує рядки у блакитний колір, якщо артикул є в наданому файлі.
+        - Додає нові дані з файлу new_data_file у відповідні категорії.
+
+        :param directory: Шлях до папки з Excel файлами.
+        :param article_file: Шлях до файлу з артикулами (опціонально).
+        :param new_data_file: Шлях до файлу з новими даними (опціонально).
+        :param max_columns: Кількість нових доданих колонок у файл
+        """
+
+        def sanitize_filename(name: str) -> str:
+            invalid_chars = ('<', '>', ':', '"', '/', '\\', '|', '?', '*')
+            for char in invalid_chars:
+                name = name.replace(char, '')
+            return name.strip()
+
+        def detect_excel_format(file_path: Path):
+            """ Визначає формат Excel-файлу, навіть якщо розширення неправильне """
+            try:
+                with open(file_path, "rb") as f:
+                    header = f.read(8)
+                if header.startswith(b"\xD0\xCF\x11\xE0"):  # Старий .xls (OLE2)
+                    return "xls"
+                elif header.startswith(b"PK\x03\x04"):  # Новий .xlsx (ZIP-based)
+                    return "xlsx"
+                else:
+                    return None
+            except Exception:
+                return None
+
+        def format_excel(file_path: Path, highlight_articles=set(), new_rows=set()):
+            """ Форматує Excel-файл та фарбує рядки """
+            try:
+                wb = openpyxl.load_workbook(file_path)
+                ws = wb.active
+
+                # Встановлення висоти рядків
+                for row in ws.iter_rows():
+                    ws.row_dimensions[row[0].row].height = 15
+
+                # Закріплення заголовка
+                ws.freeze_panes = "A2"
+
+                # Увімкнення автофільтра
+                ws.auto_filter.ref = ws.dimensions
+
+                # Фарбування рядків у блакитний, якщо артикул у списку
+                blue_fill = PatternFill(start_color="5B9BD5", end_color="5B9BD5", fill_type="solid")
+                for row in ws.iter_rows(min_row=2):  # Пропускаємо заголовки
+                    if row[1].value in highlight_articles or row[0].row in new_rows:
+                        for cell in row:
+                            cell.fill = blue_fill
+
+                wb.save(file_path)
+                print(f"✅ Файл відформатовано: {file_path.name}")
+            except Exception as e:
+                print(f"⚠️ Помилка при форматуванні {file_path.name}: {e}")
+
+        directory = Path(directory)
+        if not directory.exists():
+            print(f"❌ Папка {directory} не існує!")
+            return
+
+        # Зчитуємо артикул-файл, якщо передано
+        highlight_articles = set()
+        if article_file and Path(article_file).exists():
+            try:
+                df_articles = pd.read_excel(article_file, dtype=str, engine="openpyxl")
+                highlight_articles = set(df_articles.iloc[:, 1].dropna().unique())  # Колонка 2 (індекс 1)
+                print(f"🔹 Зчитано {len(highlight_articles)} унікальних артикулів для виділення")
+            except Exception as e:
+                print(f"⚠️ Помилка при зчитуванні файлу з артикулами: {e}")
+
+        # Зчитуємо нові дані, якщо передано
+        new_data = {}
+        if new_data_file and Path(new_data_file).exists():
+            try:
+                df_new = pd.read_excel(new_data_file, dtype=str, engine="openpyxl")
+                if df_new.shape[1] >= 3:
+                    for _, row in df_new.iterrows():
+                        category = sanitize_filename(row.iloc[2])  # 3-я колонка – категорія
+                        if category and category not in new_data:
+                            new_data[category] = []
+                        new_data[category].append(row.tolist())  # Додаємо новий рядок
+                    print(f"🔹 Нові дані розподілено по категоріях: {len(new_data)} категорій")
+            except Exception as e:
+                print(f"⚠️ Помилка при зчитуванні файлу з новими даними: {e}")
+
+        for idx, file_path in enumerate(directory.glob("*.xls*")):
+            try:
+                print(f"\n📂 {idx + 1}. Обробка файлу: {file_path.name}")
+
+                # Визначаємо формат
+                detected_format = detect_excel_format(file_path)
+                if detected_format == "xls":
+                    df = pd.read_excel(file_path, dtype=str, engine="xlrd")  # Старий .xls
+                elif detected_format == "xlsx":
+                    df = pd.read_excel(file_path, dtype=str, engine="openpyxl")  # Новий .xlsx
+                else:
+                    print(f"⚠️ Файл {file_path.name} не є дійсним Excel. Пропускаємо.")
+                    continue
+
+                if df.shape[1] < 3:
+                    print(f"⚠️ Файл {file_path.name} містить менше 3 колонок. Пропускаємо.")
+                    continue
+
+                categories = df.iloc[:, 2].dropna().unique()
+
+                if len(categories) == 1:
+                    category_name = sanitize_filename(categories[0])
+                    new_filename = category_name + ".xlsx"
+                    new_path = directory / new_filename
+
+                    if new_path.exists():
+                        print(f"⚠️ Файл {new_filename} вже існує. Пропускаємо.")
+                        continue
+
+                    # Перетворення .xls у .xlsx
+                    if detected_format == "xls":
+                        temp_xlsx = file_path.with_suffix(".xlsx")
+                        df.to_excel(temp_xlsx, index=False, engine="openpyxl")
+                        shutil.copy2(temp_xlsx, new_path)
+                        temp_xlsx.unlink()
+                    else:
+                        shutil.copy2(file_path, new_path)
+
+                    file_path.unlink()
+
+                    # Додаємо нові дані до файлу
+                    if new_data_file and category_name in new_data:
+                        wb = openpyxl.load_workbook(new_path)
+                        ws = wb.active
+                        start_row = ws.max_row + 1
+
+                        for row_idx, new_row in enumerate(new_data[category_name], start=start_row):
+                            formatted_row = new_row[:max_columns] + [""] * (max_columns - len(new_row))
+                            ws.append(formatted_row)  # Додаємо новий рядок
+
+                            for cell in ws[row_idx]:
+                                cell.fill = PatternFill(start_color="5B9BD5", end_color="5B9BD5",
+                                                        fill_type="solid")  # Заливка
+                        wb.save(new_path)
+                        print(f"✅ Додано {len(new_data[category_name])} нових рядків у {new_filename}")
+
+                        format_excel(new_path, highlight_articles, new_rows=set(range(start_row, ws.max_row + 1)))
+                    else:
+                        format_excel(new_path, highlight_articles)
+
+                    print(f"✅ Файл перейменовано: {file_path.name} -> {new_filename}")
+                else:
+                    print(f"⚠️ У файлі {file_path.name} кілька різних категорій, не перейменовується.")
+
+            except Exception as e:
+                print(f"❌ Помилка при обробці файлу {file_path.name}: {e}")

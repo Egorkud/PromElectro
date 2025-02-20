@@ -17,6 +17,7 @@ def main():
 
     # DI.extract_unique_categories()          # Creates file with unique categories from xlsx files in folder
     # DI.download_categories(True)            # Selenium downloads categories files from categories file
+    # DI.process_excel_files(directory="", )  # Process all files from dir
 
 if __name__ == '__main__':
     start = time.time()
