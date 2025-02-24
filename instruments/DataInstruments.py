@@ -606,3 +606,38 @@ class DataInstruments(Resources):
 
             except Exception as e:
                 print(f"❌ Помилка при обробці файлу {file_path.name}: {e}")
+
+    @staticmethod
+    def merge_xlsx_files(input_folder: str = "import_queue",
+                         output_file: str = "new_merged_data.xlsx") -> None:
+        """
+        Merges all data from .xlsx files in input_folder.
+
+        :param input_folder: Folder where .xlsx files are located.
+        :param output_file: Name of output file.
+        """
+        # Створюємо шлях до папки з файлами
+        folder_path = Path(input_folder)
+
+        # Перевіряємо, чи існує така папка
+        if not folder_path.exists() or not folder_path.is_dir():
+            raise ValueError(f"Папка {input_folder} не існує або це не директорія")
+
+        # Змінна для зберігання даних усіх файлів
+        merged_data = []
+
+        # Проходимо по кожному xlsx файлу в папці
+        for file in folder_path.glob("*.xlsx"):
+            # Завантажуємо файл
+            df = pd.read_excel(file)
+
+            # Додаємо ці дані в список
+            merged_data.append(df)
+
+        # Об'єднуємо всі дані в один DataFrame
+        merged_df = pd.concat(merged_data, ignore_index=True)
+
+        # Записуємо результат в новий xlsx файл
+        merged_df.to_excel(output_file, index=False)
+
+        print(f"Дані успішно збережено в {output_file}")
