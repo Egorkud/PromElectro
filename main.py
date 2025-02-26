@@ -14,6 +14,8 @@ def main():
     # DI.check_duplicates_articule("", "")    # Checks for duplicates between two files
     # DI.get_coloured_cells()                 # Checks for coloured cells in file and write them to empty file
     # DI.get_code_row()                       # Create file with codes divided by commas
+    # DI.generate_numbers_string(1, 5)        # Creates .txt file with numbers divided by ,
+    # DI.collect_product_numbers()            # Creates .txt file with numbers divided by , from directory
 
     # DI.merge_xlsx_files()                   # Merges files after parsing into similar columns
 

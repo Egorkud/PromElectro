@@ -71,6 +71,66 @@ class DataInstruments(Resources):
 
         print(self.BLUE("\nProject initialisation finished\n"))
 
+    @staticmethod
+    def generate_numbers_string(num_1: int, num_2: int, filename: str = "new_numbers.txt") -> None:
+        """
+        Creates .txt file with numbers divided by comma
+        :param num_1: Start number
+        :param num_2: Finish number
+        :param filename: Name of file + .txt
+        """
+        string = ""
+
+        while num_1 <= num_2:
+            string += f"{str(num_1)},"
+            num_1 += 1
+
+        string = string[:-1]
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(string)
+
+    @staticmethod
+    def collect_product_numbers(directory: str, output_file: str = "product_numbers.txt") -> None:
+        """
+        Проходить по всіх Excel-файлах у папці, збирає номери товарів із першої колонки
+        та записує їх у текстовий файл через кому без пробілів.
+
+        :param directory: Шлях до папки з Excel файлами
+        :param output_file: Ім'я вихідного текстового файлу
+        """
+
+        directory = Path(directory)
+        if not directory.exists() or not directory.is_dir():
+            print(f"❌ Папка {directory} не існує або не є директорією!")
+            return
+
+        product_numbers = []
+
+        for idx, file_path in enumerate(directory.glob("*.xls*")):
+            try:
+                print(f"{idx + 1}. Обробка файлу: {file_path.name}")
+
+                # Визначаємо, який engine використовувати
+                engine = "openpyxl" if file_path.suffix == ".xlsx" else "xlrd"
+                df = pd.read_excel(file_path, dtype=str, engine=engine)
+
+                if df.shape[1] < 1:
+                    print(f"Файл {file_path.name} не містить колонок. Пропускаємо.")
+                    continue
+
+                numbers = df.iloc[:, 0].dropna().astype(str).tolist()  # Беремо 1-шу колонку
+                product_numbers.extend(numbers)
+
+            except Exception as e:
+                print(f"Помилка при обробці {file_path.name}: {e}")
+
+        # Записуємо у файл через кому без пробілів
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(",".join(product_numbers))
+
+        print(f"Готово! Дані записані у {output_file}")
+
+
     # Fill descriptions from descriptions sheet.
     # Column 1. Name or id as convenient
     # Column 2. Group name (full path to group).
