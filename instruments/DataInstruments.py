@@ -79,15 +79,14 @@ class DataInstruments(Resources):
         :param num_2: Finish number
         :param filename: Name of file + .txt
         """
-        string = ""
+        if num_1 > num_2:
+            raise ValueError("Цифра 1 більше за цифру 2")
 
-        while num_1 <= num_2:
-            string += f"{str(num_1)},"
-            num_1 += 1
+        numbers = [str(i) for i in range(num_1, num_2 + 1)]
+        result_string = ",".join(numbers)
 
-        string = string[:-1]
         with open(filename, "w", encoding="utf-8") as f:
-            f.write(string)
+            f.write(result_string)
 
     @staticmethod
     def collect_product_numbers(directory: str, output_file: str = "product_numbers.txt") -> None:
