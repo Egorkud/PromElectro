@@ -25,6 +25,15 @@ class BaseParser(Resources):
         self.images_counter = 0
         self.instructions_counter = 0
 
+    @staticmethod
+    def save_html(req: object, new_name: str = "index.html") -> None:
+        """
+        Creates index.html file for
+        :param req: requests object
+        :param new_name: Name of html file (optional)
+        """
+        with open(f"{new_name}", "w", encoding="utf-8") as f:
+            f.write(req.text)
 
     # Returns title of the pdf file
     @staticmethod
