@@ -201,55 +201,40 @@ class DataInstruments(Resources):
                                   export_cols: tuple = (1, 2),  # (артикул, назва товару)
                                   work_cols: tuple = (1, 2)):
 
-        # Завантажуємо файли через pandas
         export_df = pd.read_excel(export_file, usecols=list(export_cols))
         work_df = pd.read_excel(work_file, usecols=list(work_cols))
 
-        # Завантажуємо оригінальний файл через openpyxl (для отримання гіперпосилань)
         wb = load_workbook(work_file, data_only=True)
         ws = wb.active
 
-        # Конвертуємо артикули в множину для швидкого пошуку (з .strip())
-        export_articles = set(export_df.iloc[:, 0].dropna().astype(str).str.strip())
+        # Видаляємо пробіли тільки для порівняння
+        export_articles = set(export_df.iloc[:, 0].dropna().astype(str).str.replace(" ", ""))
 
-        # Фільтруємо дублікати та унікальні записи
         work_df = work_df.dropna(subset=[work_df.columns[0]])
-        work_df["Артикул"] = work_df.iloc[:, 0].astype(str).str.strip()
+        work_df["Артикул_чистий"] = work_df.iloc[:, 0].astype(str).str.replace(" ", "")
+        work_df["Артикул"] = work_df.iloc[:, 0].astype(str)
         work_df["Назва"] = work_df.iloc[:, 1]
 
-        # Отримуємо URL із гіпертексту у стовпці "Назва товару"
         work_df["Посилання"] = None
-        for row_idx in range(2, ws.max_row + 1):  # Починаємо з 2-го рядка (1-й = заголовки)
-            cell = ws.cell(row=row_idx, column=work_cols[1] + 1)  # Колонка з назвами товарів
+        for row_idx in range(2, ws.max_row + 1):
+            cell = ws.cell(row=row_idx, column=work_cols[1] + 1)
             if cell.hyperlink:
-                work_df.at[row_idx - 2, "Посилання"] = cell.hyperlink.target  # Зберігаємо URL
+                work_df.at[row_idx - 2, "Посилання"] = cell.hyperlink.target
 
-        # Визначаємо дублікати
-        work_df["Дублікат"] = work_df["Артикул"].isin(export_articles)
-        duplicates = work_df[work_df["Дублікат"]][["Артикул", "Назва", "Посилання"]]
-        unique = work_df[~work_df["Дублікат"]][["Артикул", "Назва", "Посилання"]]
+        work_df["Дублікат"] = work_df["Артикул_чистий"].isin(export_articles)
+        duplicates = work_df[work_df["Дублікат"]][["Артикул", "Назва", "Посилання"]].sort_values(by="Артикул")
+        unique = work_df[~work_df["Дублікат"]][["Артикул", "Назва", "Посилання"]].sort_values(by="Артикул")
 
-        # Функція для збереження у файл
         def save_to_excel(df, filename, sheet_name):
             wb_out = Workbook()
             ws_out = wb_out.active
             ws_out.title = sheet_name
-
-            # Записуємо заголовки
-            headers = ["Артикул", "Назва товару", "Посилання"]
-            ws_out.append(headers)
-
-            # Записуємо дані
+            ws_out.append(["Артикул", "Назва товару", "Посилання"])
             for row in df.itertuples(index=False):
                 ws_out.append(list(row))
-
-            # Зберігаємо файл
             wb_out.save(filename)
 
-        # Збереження дублікатів
         save_to_excel(duplicates, duplicates_file, "Дублікати")
-
-        # Збереження унікальних товарів
         save_to_excel(unique, unique_file, "Унікальні")
 
         print(f"✅ Дублікати збережено у '{duplicates_file}'")
