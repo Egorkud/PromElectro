@@ -104,8 +104,14 @@ class BaseParser(Resources):
 
         for idx, link in enumerate(photo_links):
             try:
-                file_path_name = os.path.basename(urlparse(link).path)
-                file_path_no_hash = Path(output_folder) / file_path_name
+                file_name = os.path.basename(urlparse(link).path)
+
+                if re.search(r'[^a-zA-Z0-9_\-]', file_name):
+                    file_name = f"{idx}. Photo_"
+
+                file_path_no_hash = Path(output_folder) / file_name
+
+
                 photo_path_name = f"/content/images/ctproduct_image/{folder_name}"
 
                 time.sleep(0.5 + random.uniform(1, 2))
