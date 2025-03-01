@@ -59,7 +59,7 @@ class BaseParser(Resources):
         file_stem = file_path.stem  # Початкова назва без розширення
 
         # Генеруємо хеш (беремо 8 символів для унікальності)
-        file_hash = hashlib.sha256(file_content).hexdigest()[:12]
+        file_hash = hashlib.sha256(file_content).hexdigest()[:18]
 
         # Формуємо нове ім'я файлу
         new_file_name = f"{file_stem}_{idx}{file_hash}{extension}"
@@ -92,7 +92,7 @@ class BaseParser(Resources):
         file_name = Path(title).stem
         # Перевірка на кирилицю
         if re.search(r'[^a-zA-Z0-9_\-]', file_name):
-            file_name = "Instruction_name_"
+            file_name = "Instruction_"
 
         file_path_no_hash = Path(output_folder) / file_name
         file_name_with_hash = self.save_file_with_hash(file_path_no_hash, req_pdf, ".pdf")
@@ -116,7 +116,7 @@ class BaseParser(Resources):
                 file_name = os.path.basename(urlparse(link).path)
 
                 if re.search(r'[^a-zA-Z0-9_\-]', file_name):
-                    file_name = f"{idx}. Photo_"
+                    file_name = f"Photo_"
 
                 file_path_no_hash = Path(output_folder) / file_name
 
