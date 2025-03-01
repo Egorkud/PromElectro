@@ -9,6 +9,9 @@ from pathlib2 import Path
 from PyPDF2 import PdfReader
 from io import BytesIO
 from fake_useragent import UserAgent
+import logging
+import csv
+from datetime import datetime
 
 from instruments.Resources import Resources
 
@@ -24,6 +27,7 @@ class BaseParser(Resources):
         self.char_dict = {}
         self.images_counter = 0
         self.instructions_counter = 0
+        self.log_data = []
 
     @staticmethod
     def save_html(req: object, new_name: str = "index.html") -> None:
@@ -134,3 +138,53 @@ class BaseParser(Resources):
                 self.blank_sheet.cell(row, 16 + idx).value = f"{photo_path_name}/{file_name_with_hash}"
             except:
                 pass
+
+
+class ParserLogger:
+    def __init__(self, log_name="parser"):
+        """Ініціалізація логера з можливістю передавати ім'я лог-файлу"""
+        self.date_str = datetime.now().strftime("%Y-%m-%d")  # Поточна дата
+        self.log_name = log_name
+
+        # Формуємо шляхи для лог-файлів
+        self.log_file = f"logs/{self.log_name}_{self.date_str}.log"
+        self.csv_file = f"logs/{self.log_name}_{self.date_str}.csv"
+
+        # Переконуємося, що папка logs існує
+        os.makedirs("logs", exist_ok=True)
+
+        # Налаштовуємо логер
+        self.logger = self.setup_logger()
+
+    def setup_logger(self):
+        """Налаштовує логер для запису у файл"""
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            handlers=[
+                logging.FileHandler(self.log_file, mode="a", encoding="utf-8"),
+                logging.StreamHandler()  # Додатково виводить логи у консоль
+            ]
+        )
+        return logging.getLogger("ParserLogger")
+
+    def log_to_csv(self, data, header=None):
+        """Записує дані у CSV-файл із роздільником ';' і додає дату та час у першу колонку"""
+        file_exists = os.path.isfile(self.csv_file)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Поточний час у правильному форматі
+
+        with open(self.csv_file, mode="a", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL)  # ';' як роздільник
+
+            # Якщо файл новий, додаємо заголовки
+            if header and not file_exists:
+                writer.writerow(["Дата та час"] + list(header))  # Додаємо заголовок для часу
+
+            writer.writerow([timestamp] + list(data))  # Додаємо час як ОДИН елемент списку
+
+    def log_parsing_result(self, data, header=None):
+        """Логує дані у TXT і записує у CSV"""
+        self.logger.info(f"Parsing: {data}")
+
+        # Запис у CSV (дані розподіляються по колонках)
+        self.log_to_csv(data, header)

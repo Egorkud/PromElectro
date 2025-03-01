@@ -23,6 +23,7 @@ def main():
     # DI.download_categories(True)            # Selenium downloads categories files from categories file
     # DI.process_excel_files(directory="", )  # Process all files from dir
 
+
 if __name__ == '__main__':
     start = time.time()
 

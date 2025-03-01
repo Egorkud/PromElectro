@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import openpyxl
 
 from instruments.BaseParser import BaseParser
+from instruments.BaseParser import ParserLogger
 
 # Only for copy and make new data scrapper for new website
 class TemplateParser(BaseParser):
@@ -19,12 +20,12 @@ class TemplateParser(BaseParser):
               export_file: str = "export.xlsx"):
 
         work_sheet = openpyxl.open(export_file).active
+        logger = ParserLogger()
 
         for row in range(2, work_sheet.max_row + 1):
             print(self.GREEN(f"{row}. Started"))
 
             item_articule = work_sheet.cell(row, 2).value
-            self.blank_sheet.cell(row, 2).value = item_articule
 
             url_search_ru = "website searching link"    # Need to add searching link
             url = f"{url_search_ru}{item_articule}"
@@ -32,9 +33,14 @@ class TemplateParser(BaseParser):
             searched_item_link = self.get_searched_item_link(url)
             print(searched_item_link)
 
+            self.log_data = [row - 1 ,item_articule, searched_item_link]
+
             if not searched_item_link:
                 print(self.GREEN(f"Link skipped. None response"))
+                logger.log_parsing_result(self.log_data)
                 continue
+
+            self.blank_sheet.cell(row, 2).value = item_articule
 
             # If there is necessary to scrap UKR version, it is important for names and descriptions
             ukr_link = searched_item_link.replace(..., ...)  # Old link to new UKR link
@@ -51,6 +57,7 @@ class TemplateParser(BaseParser):
             self.get_photos(soup, row)
             self.get_product_name(two_lang_links, row, item_articule, work_sheet)
 
+            logger.log_parsing_result(self.log_data)
 
             self.blank_file.save(filename)
             time.sleep(1 + random.uniform(1, 3))
@@ -66,7 +73,7 @@ class TemplateParser(BaseParser):
             searched_item_link = soup.find(...)  # Реалізація пошуку
             return searched_item_link
         except Exception as ex:
-            print(self.RED(f"Error getting search link: {ex}"))
+            self.log_data.append(f"Error getting search link: {ex}")
             return None
 
     def get_characteristics(self, soup, row):
@@ -87,8 +94,7 @@ class TemplateParser(BaseParser):
             self.blank_sheet.cell(row, char_col).value = value
 
         except Exception as ex:
-            print(ex)
-            print("No characteristics")
+            self.log_data.append(f"Error getting characteristics: {ex}")
 
     def download_instruction(self, soup, row):
         # Get instructions
@@ -101,8 +107,7 @@ class TemplateParser(BaseParser):
             self.download_instruction_file(instruction_link, row)
 
         except Exception as ex:
-            print(ex)
-            print("No instructions")
+            self.log_data.append(f"Error getting instructions {ex}")
 
     def get_descriptions(self, two_lang_links, row):
         # Get description RU (But now it is better to generate with gpt)
@@ -118,8 +123,7 @@ class TemplateParser(BaseParser):
                 self.blank_sheet.cell(row, 11 + idx).value = "\n".join(clean_descriptions)
                 time.sleep(1 + random.uniform(1, 2))
             except Exception as ex:
-                print(ex)
-                print("No description")
+                self.log_data.append(f"Error getting descriptions: {ex}")
 
     def get_photos(self, soup, row):
         # Get photos
@@ -131,8 +135,7 @@ class TemplateParser(BaseParser):
 
             self.download_photos(photo_links, row, "folder_name") # Input folder name
         except Exception as ex:
-            print(ex)
-            print("No photos")
+            self.log_data.append(f"Error getting photos: {ex}")
 
     def get_product_name(self, two_lang_links, row, item_articule, work_sheet):
         # Get names ru ukr
@@ -167,5 +170,4 @@ class TemplateParser(BaseParser):
                 self.save_names_data("filename", item_type, last_name, item_articule, series, manufacturer, row, idx)
 
             except Exception as ex:
-                print(ex)
-                print("No name or manufacturer name")
+                self.log_data.append(f"Error getting product name {ex}")

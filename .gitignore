@@ -12,6 +12,7 @@
 *.pdf
 *.jpg
 *.html
+/logs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
